@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { API_URL } from '../config/api';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -35,7 +36,7 @@ const PasswordReset = () => {
     setIsLoading(true);
 
     try {
-      await axios.post('http://localhost:5000/api/password-reset/reset', {
+      await axios.post(`${API_URL}/api/password-reset/reset`, {
         token,
         password
       });

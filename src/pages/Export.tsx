@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { API_URL } from '../config/api';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Download, Loader2, AlertCircle, Trash2 } from "lucide-react";
@@ -27,7 +28,7 @@ const Export = () => {
   useEffect(() => {
     const fetchSummaries = async () => {
       try {
-        const response = await fetch('http://localhost:5000/api/summaries', {
+        const response = await fetch(`${API_URL}/api/summaries`, {
           headers: {
             'Authorization': `Bearer ${token}`,
           },
@@ -52,7 +53,7 @@ const Export = () => {
   const handlePdfExport = async (summary: Summary) => {
     setExportingId(summary._id);
     try {
-      const response = await fetch('http://localhost:5000/api/pdf/generate-pdf', {
+      const response = await fetch(`${API_URL}/api/pdf/generate-pdf`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -89,7 +90,7 @@ const Export = () => {
 
     setDeletingId(summaryId);
     try {
-      const response = await fetch(`http://localhost:5000/api/summaries/${summaryId}`, {
+      const response = await fetch(`${API_URL}/api/summaries/${summaryId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,

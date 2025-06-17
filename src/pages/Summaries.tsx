@@ -3,7 +3,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Play, Download, AlertCircle, Loader2, BrainCircuit } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from 'react';
+import { API_URL } from '../config/api';
 import Header from "@/components/shared/Header";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from 'react-router-dom';
@@ -35,7 +36,7 @@ const Summaries = () => {
     setSummary(null);
 
     try {
-      const response = await fetch('http://localhost:5000/api/summaries', {
+      const response = await fetch(`${API_URL}/api/summaries`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -63,7 +64,7 @@ const Summaries = () => {
 
     setIsExporting(true);
     try {
-      const response = await fetch('http://localhost:5000/api/pdf/generate-pdf', {
+      const response = await fetch(`${API_URL}/api/pdf/generate-pdf`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -100,7 +101,7 @@ const Summaries = () => {
     setError(null);
 
     try {
-      const response = await fetch('http://localhost:5000/api/quiz/generate', {
+      const response = await fetch(`${API_URL}/api/quiz/generate`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

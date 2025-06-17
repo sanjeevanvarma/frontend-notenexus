@@ -1,5 +1,5 @@
-
 import React, { useState, useEffect } from 'react';
+import { API_URL } from '../config/api';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import Header from '@/components/shared/Header';
@@ -26,7 +26,7 @@ const Quizzes = () => {
   useEffect(() => {
     const fetchQuizzes = async () => {
       try {
-        const response = await fetch('http://localhost:5000/api/quiz', {
+        const response = await fetch(`${API_URL}/api/quiz`, {
           headers: {
             'Authorization': `Bearer ${token}`,
           },
@@ -53,7 +53,7 @@ const Quizzes = () => {
   const handleDeleteQuiz = async (quizId: string) => {
     setDeletingId(quizId);
     try {
-      const response = await fetch(`http://localhost:5000/api/quiz/${quizId}`, {
+      const response = await fetch(`${API_URL}/api/quiz/${quizId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,

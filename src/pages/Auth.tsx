@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { API_URL } from '../config/api';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -62,7 +63,7 @@ const Auth = () => {
   };
 
   const handleGoogleAuth = () => {
-    window.location.href = 'http://localhost:5000/api/auth/google';
+    window.location.href = `${API_URL}/api/auth/google`;
   };
 
   return (

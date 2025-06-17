@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { API_URL } from '../config/api';
 import { useParams, Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import Header from '@/components/shared/Header';
@@ -36,7 +37,7 @@ const Quiz = () => {
   useEffect(() => {
     const fetchQuiz = async () => {
       try {
-        const response = await fetch(`http://localhost:5000/api/quiz/${id}`, {
+        const response = await fetch(`${API_URL}/api/quiz/${id}`, {
           headers: {
             'Authorization': `Bearer ${token}`,
           },
