@@ -1,0 +1,19 @@
+{
+  "rewrites": [
+    {
+      "source": "/api/(.*)",
+      "destination": "https://backend-notenexus.onrender.com/api/"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/api/(.*)",
+      "headers": [
+        {
+          "key": "Access-Control-Allow-Origin",
+          "value": "https://frontend-notenexus.vercel.app"
+        }
+      ]
+    }
+  ]
+}
