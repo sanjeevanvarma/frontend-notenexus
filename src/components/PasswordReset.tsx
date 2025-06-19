@@ -9,15 +9,19 @@ import { useNavigate, useParams } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import axios from 'axios';
 
-const PasswordReset = () => {
+interface PasswordResetProps {
+  token: string;
+}
+
+const PasswordReset = ({ token }: PasswordResetProps) => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { token } = useParams();
+  const { token: urlToken } = useParams();
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  if (!token) {
+  if (!urlToken) {
     navigate('/auth');
     return null;
   }
