@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { API_URL } from '../config/api';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -16,12 +16,17 @@ interface PasswordResetProps {
 const PasswordReset = ({ token }: PasswordResetProps) => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { token: urlToken } = useParams();
+  // Remove the token from URL params since we're getting it as prop
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    params.delete('token');
+    window.history.replaceState(null, '', `${window.location.pathname}?${params.toString()}`);
+  }, []);
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  if (!urlToken) {
+  if (!token) {
     navigate('/auth');
     return null;
   }
