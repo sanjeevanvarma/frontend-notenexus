@@ -3,6 +3,10 @@
     {
       "source": "/api/(.*)",
       "destination": "https://backend-notenexus.onrender.com/api/"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/"
     }
   ],
   "headers": [
