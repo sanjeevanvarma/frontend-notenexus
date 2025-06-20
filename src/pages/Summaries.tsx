@@ -2,7 +2,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Play, Download, AlertCircle, Loader2, BrainCircuit } from "lucide-react";
+import { Play, Download, AlertCircle, Loader2, BrainCircuit, BookOpen } from "lucide-react";
 import { useState, useEffect } from 'react';
 import { API_URL } from '../config/api';
 import Header from "@/components/shared/Header";
@@ -28,6 +28,7 @@ const Summaries = () => {
   const [error, setError] = useState<string | null>(null);
   const [isExporting, setIsExporting] = useState(false);
   const [isGeneratingQuiz, setIsGeneratingQuiz] = useState(false);
+  const [isGeneratingFlashcards, setIsGeneratingFlashcards] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -124,6 +125,36 @@ const Summaries = () => {
     }
   };
 
+  const handleGenerateFlashcards = async () => {
+    if (!summary) return;
+
+    setIsGeneratingFlashcards(true);
+    setError(null);
+
+    try {
+      const response = await fetch(`${API_URL}/api/flashcards/generate`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({ summaryId: summary._id }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to generate flashcards.');
+      }
+
+      const flashcards = await response.json();
+      navigate(`/flashcards/${flashcards._id}`);
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setIsGeneratingFlashcards(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
       <Header title="AI Summaries" />
@@ -181,18 +212,25 @@ const Summaries = () => {
                   <div className="flex-1 space-y-4">
                     <p className="text-sm whitespace-pre-wrap leading-relaxed">{summary.summary}</p>
                     <div className="flex flex-col sm:flex-row gap-2 pt-4">
-                      <Button onClick={handlePdfExport} disabled={isExporting || isGeneratingQuiz} className="w-full sm:w-auto">
+                      <Button onClick={handlePdfExport} disabled={isExporting || isGeneratingQuiz || isGeneratingFlashcards} className="w-full sm:w-auto">
                         {isExporting ? (
                           <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Exporting...</>
                         ) : (
                           <><Download className="w-4 h-4 mr-2" />Export to PDF</>
                         )}
                       </Button>
-                      <Button onClick={handleGenerateQuiz} disabled={isGeneratingQuiz || isExporting} className="w-full sm:w-auto">
+                      <Button onClick={handleGenerateQuiz} disabled={isGeneratingQuiz || isExporting || isGeneratingFlashcards} className="w-full sm:w-auto">
                         {isGeneratingQuiz ? (
                           <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Generating Quiz...</>
                         ) : (
                           <><BrainCircuit className="w-4 h-4 mr-2" />Generate Quiz</>
+                        )}
+                      </Button>
+                      <Button onClick={handleGenerateFlashcards} disabled={isGeneratingFlashcards || isExporting || isGeneratingQuiz} className="w-full sm:w-auto">
+                        {isGeneratingFlashcards ? (
+                          <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Generating Flashcards...</>
+                        ) : (
+                          <><BookOpen className="w-4 h-4 mr-2" />Generate Flashcards</>
                         )}
                       </Button>
                     </div>

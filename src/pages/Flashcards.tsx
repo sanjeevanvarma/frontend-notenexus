@@ -5,39 +5,60 @@ import { Badge } from "@/components/ui/badge";
 import { BookOpen, Play, RotateCcw, Download, Clock, ChevronLeft, ChevronRight } from "lucide-react";
 import { useState } from "react";
 import Header from "@/components/shared/Header";
+import { useFlashcardsBySummary, useGenerateFlashcards, useDeleteFlashcards } from "@/hooks/useFlashcards";
+import { Flashcard } from "@/types/flashcards";
+import { toast } from "sonner";
 
 const Flashcards = () => {
   const [youtubeUrl, setYoutubeUrl] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
-  const [currentCard, setCurrentCard] = useState(0);
+  const [currentCard, setCurrentCard] = useState<number>(0);
   const [isFlipped, setIsFlipped] = useState(false);
+  const [selectedSummaryId, setSelectedSummaryId] = useState<string | null>(null);
 
-  const sampleFlashcards = [
-    {
-      question: "What is Machine Learning?",
-      answer: "Machine Learning is a subset of artificial intelligence that focuses on algorithms that can learn from and make predictions on data without being explicitly programmed for every task."
-    },
-    {
-      question: "What is the difference between supervised and unsupervised learning?",
-      answer: "Supervised learning uses labeled training data to learn a mapping from inputs to outputs, while unsupervised learning finds hidden patterns in data without labeled examples."
-    },
-    {
-      question: "What is the bias-variance tradeoff?",
-      answer: "The bias-variance tradeoff is the balance between a model's ability to minimize bias (error from overly simplistic assumptions) and variance (error from sensitivity to small fluctuations in training data)."
-    },
-    {
-      question: "What is cross-validation?",
-      answer: "Cross-validation is a technique used to assess how well a model will generalize to unseen data by partitioning the data and testing the model on different subsets."
-    }
-  ];
+  const { data: flashcards, isLoading: isFetchingFlashcards } = useFlashcardsBySummary(selectedSummaryId || "");
+  const { mutate: generateFlashcards } = useGenerateFlashcards();
+  const { mutate: deleteFlashcards } = useDeleteFlashcards(selectedSummaryId || "");
+
+  const handleGenerateFlashcards = (summaryId: string) => {
+    setIsProcessing(true);
+    generateFlashcards(summaryId, {
+      onSuccess: () => {
+        setSelectedSummaryId(summaryId);
+        toast.success('Flashcards generated successfully!');
+      },
+      onError: (error) => {
+        toast.error('Failed to generate flashcards');
+      },
+      onSettled: () => {
+        setIsProcessing(false);
+      }
+    });
+  };
+
+  const handleDeleteAllFlashcards = () => {
+    if (!selectedSummaryId) return;
+
+    deleteFlashcards(undefined, {
+      onSuccess: () => {
+        toast.success('Flashcards deleted successfully!');
+        setSelectedSummaryId(null);
+      },
+      onError: (error) => {
+        toast.error('Failed to delete flashcards');
+      }
+    });
+  };
 
   const nextCard = () => {
-    setCurrentCard((prev) => (prev + 1) % sampleFlashcards.length);
+    if (!flashcards) return;
+    setCurrentCard((prev) => (prev + 1) % flashcards.length);
     setIsFlipped(false);
   };
 
   const prevCard = () => {
-    setCurrentCard((prev) => (prev - 1 + sampleFlashcards.length) % sampleFlashcards.length);
+    if (!flashcards) return;
+    setCurrentCard((prev) => (prev - 1 + flashcards.length) % flashcards.length);
     setIsFlipped(false);
   };
 
@@ -48,115 +69,137 @@ const Flashcards = () => {
       <div className="container mx-auto px-4 py-12">
         {/* Page Header */}
         <div className="text-center mb-12 animate-fade-in">
-          <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-2xl flex items-center justify-center mx-auto mb-6">
-            <BookOpen className="w-8 h-8 text-white" />
-          </div>
-          <h1 className="text-4xl font-bold mb-4 bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">
-            Smart Flashcards
-          </h1>
-          <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-            Automatically generated flashcards for effective learning and retention
-          </p>
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-3xl font-bold text-center">
+                <BookOpen className="w-6 h-6 mr-2 inline" />
+                Smart Flashcards
+              </CardTitle>
+              <CardDescription>
+                Generate and study flashcards from your video summaries
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-col gap-4">
+                <div className="flex flex-col gap-2">
+                  <label htmlFor="youtubeUrl" className="text-sm font-medium">
+                    YouTube URL
+                  </label>
+                  <Input
+                    id="youtubeUrl"
+                    placeholder="Enter YouTube URL"
+                    value={youtubeUrl}
+                    onChange={(e) => setYoutubeUrl(e.target.value)}
+                  />
+                </div>
+                <Button
+                  onClick={() => {
+                    // This button will be used to navigate to summaries page
+                    // where user can select a summary to generate flashcards
+                    // For now, we'll keep it as a placeholder
+                  }}
+                  className="w-full"
+                >
+                  <Download className="w-4 h-4 mr-2" />
+                  Select Summary
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
         </div>
 
-        <div className="max-w-2xl mx-auto space-y-8">
-          {/* Flashcard Counter */}
-          <div className="text-center animate-fade-in" style={{ animationDelay: '200ms' }}>
-            <Badge variant="secondary" className="text-lg px-4 py-2">
-              {currentCard + 1} of {sampleFlashcards.length}
-            </Badge>
-          </div>
-
-          {/* Flashcard */}
-          <div className="relative perspective-1000 animate-fade-in" style={{ animationDelay: '400ms' }}>
-            <Card 
-              className={`h-80 cursor-pointer transition-all duration-700 transform-style-preserve-3d border-0 shadow-2xl ${isFlipped ? 'rotate-y-180' : ''}`}
-              onClick={() => setIsFlipped(!isFlipped)}
+        {/* Flashcards Controls */}
+        {selectedSummaryId && (
+          <div className="flex justify-between items-center mb-6">
+            <Button
+              variant="destructive"
+              onClick={handleDeleteAllFlashcards}
             >
-              {/* Front */}
-              <div className={`absolute inset-0 backface-hidden ${isFlipped ? 'opacity-0' : 'opacity-100'}`}>
-                <CardContent className="h-full flex flex-col items-center justify-center p-8 bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-950 dark:to-cyan-950 rounded-lg">
-                  <BookOpen className="w-12 h-12 text-blue-600 mb-6" />
-                  <h2 className="text-xl font-semibold text-center mb-4">Question</h2>
-                  <p className="text-lg text-center leading-relaxed">
-                    {sampleFlashcards[currentCard].question}
-                  </p>
-                  <p className="text-sm text-muted-foreground mt-6">Click to reveal answer</p>
-                </CardContent>
-              </div>
+              Delete All Flashcards
+            </Button>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                onClick={prevCard}
+                disabled={currentCard === 0 || !flashcards}
+              >
+                <ChevronLeft className="w-4 h-4 mr-2" />
+                Previous
+              </Button>
+              <Button
+                variant="outline"
+                onClick={nextCard}
+                disabled={!flashcards || currentCard === flashcards.length - 1}
+              >
+                <ChevronRight className="w-4 h-4 mr-2" />
+                Next
+              </Button>
+            </div>
+          </div>
+        )}
 
-              {/* Back */}
-              <div className={`absolute inset-0 backface-hidden rotate-y-180 ${isFlipped ? 'opacity-100' : 'opacity-0'}`}>
-                <CardContent className="h-full flex flex-col items-center justify-center p-8 bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950 dark:to-emerald-950 rounded-lg">
-                  <div className="w-12 h-12 bg-green-600 rounded-full flex items-center justify-center mb-6">
-                    <span className="text-white font-bold text-xl">A</span>
+        {/* Flashcard Display */}
+        {flashcards && flashcards.length > 0 && (
+          <div className="relative w-full max-w-md mx-auto">
+            <Card className={`transition-transform duration-500 ${isFlipped ? 'rotate-y-180' : ''}`}>
+              <CardContent className="p-6">
+                <div className="absolute top-2 right-2">
+                  <Badge variant="secondary">
+                    {currentCard + 1}/{flashcards.length}
+                  </Badge>
+                </div>
+                <div className={`transition-opacity duration-500 ${isFlipped ? 'opacity-0' : 'opacity-100'}`}>
+                  <h3 className="text-2xl font-semibold mb-2">
+                    {flashcards[currentCard].question}
+                  </h3>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setIsFlipped(true)}
+                    >
+                      <RotateCcw className="w-4 h-4 mr-2" />
+                      Show Answer
+                    </Button>
+                    <Badge variant="outline">
+                      {flashcards[currentCard].category}
+                    </Badge>
                   </div>
-                  <h2 className="text-xl font-semibold text-center mb-4">Answer</h2>
-                  <p className="text-base text-center leading-relaxed">
-                    {sampleFlashcards[currentCard].answer}
+                </div>
+                <div className={`transition-opacity duration-500 ${isFlipped ? 'opacity-100' : 'opacity-0'}`}>
+                  <p className="text-lg mb-4">
+                    {flashcards[currentCard].answer}
                   </p>
-                  <p className="text-sm text-muted-foreground mt-6">Click to flip back</p>
-                </CardContent>
-              </div>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setIsFlipped(false)}
+                    >
+                      <RotateCcw className="w-4 h-4 mr-2" />
+                      Show Question
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
             </Card>
           </div>
+        )}
 
-          {/* Controls */}
-          <div className="flex items-center justify-center space-x-4 animate-fade-in" style={{ animationDelay: '600ms' }}>
-            <Button 
-              variant="outline" 
-              onClick={prevCard}
-              className="transform hover:scale-105 transition-all duration-200"
-            >
-              <ChevronLeft className="w-4 h-4 mr-1" />
-              Previous
-            </Button>
-            
-            <Button 
-              variant="outline" 
-              onClick={() => setIsFlipped(!isFlipped)}
-              className="transform hover:scale-105 transition-all duration-200"
-            >
-              <RotateCcw className="w-4 h-4 mr-1" />
-              Flip Card
-            </Button>
-            
-            <Button 
-              variant="outline" 
-              onClick={nextCard}
-              className="transform hover:scale-105 transition-all duration-200"
-            >
-              Next
-              <ChevronRight className="w-4 h-4 ml-1" />
-            </Button>
+        {/* Loading State */}
+        {isFetchingFlashcards && (
+          <div className="text-center py-8">
+            <Clock className="w-6 h-6 mx-auto animate-spin mb-2" />
+            <p>Loading flashcards...</p>
           </div>
+        )}
 
-          {/* Export Button */}
-          <div className="text-center animate-fade-in" style={{ animationDelay: '800ms' }}>
-            <Button className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 transform hover:scale-105 transition-all duration-200">
-              <Download className="w-4 h-4 mr-2" />
-              Export Flashcards as PDF
-            </Button>
+        {/* Empty State */}
+        {!isFetchingFlashcards && (!flashcards || flashcards.length === 0) && (
+          <div className="text-center py-8">
+            <p>No flashcards available. Generate some by selecting a summary.</p>
           </div>
-
-          {/* Progress Indicators */}
-          <div className="flex justify-center space-x-2 animate-fade-in" style={{ animationDelay: '1000ms' }}>
-            {sampleFlashcards.map((_, index) => (
-              <button
-                key={index}
-                onClick={() => {
-                  setCurrentCard(index);
-                  setIsFlipped(false);
-                }}
-                className={`w-3 h-3 rounded-full transition-all duration-200 ${
-                  index === currentCard 
-                    ? 'bg-gradient-to-r from-blue-600 to-cyan-600 scale-125' 
-                    : 'bg-muted hover:bg-muted-foreground/20'
-                }`}
-              />
-            ))}
-          </div>
-        </div>
+        )}
       </div>
     </div>
   );
