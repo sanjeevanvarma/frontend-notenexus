@@ -44,18 +44,18 @@ export const useFlashcard = (flashcardId: string) => {
   });
 };
 
-export const useDeleteFlashcards = (summaryId: string) => {
+export const useDeleteFlashcards = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async () => {
+    mutationFn: async (summaryId: string) => {
       const { data } = await axios.delete(
         `/api/flashcards/summary/${summaryId}`
       );
       return data;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['flashcards', summaryId] });
+    onSuccess: (data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['flashcards', variables] });
     },
     onError: (error) => {
       console.error('Error deleting flashcards:', error);

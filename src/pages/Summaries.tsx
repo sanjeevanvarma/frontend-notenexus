@@ -1,13 +1,18 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Play, Download, AlertCircle, Loader2, BrainCircuit, BookOpen } from "lucide-react";
-import { useState, useEffect } from 'react';
-import { API_URL } from '../config/api';
+import { Loader2, Download, BrainCircuit, BookOpen, ChevronLeft } from "lucide-react";
+import { useState, useEffect } from "react";
 import Header from "@/components/shared/Header";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from 'react-router-dom';
+import { API_URL } from '../config/api';
+import { useSummaries } from "../hooks/useSummaries";
+import { useGenerateQuiz } from "../hooks/useQuiz";
+import { useGenerateFlashcards } from "../hooks/useFlashcards";
+import { toast } from "sonner";
 
 interface Summary {
   _id: string;
@@ -117,6 +122,8 @@ const Summaries = () => {
       }
 
       const quiz = await response.json();
+      // Store summary ID in localStorage to maintain state
+      localStorage.setItem('lastSummaryId', summary._id);
       navigate(`/quiz/${quiz._id}`);
     } catch (err: any) {
       setError(err.message);
@@ -147,6 +154,8 @@ const Summaries = () => {
       }
 
       const flashcards = await response.json();
+      // Store summary ID in localStorage to maintain state
+      localStorage.setItem('lastSummaryId', summary._id);
       navigate(`/flashcards/${flashcards._id}`);
     } catch (err: any) {
       setError(err.message);
@@ -176,12 +185,18 @@ const Summaries = () => {
                   className="flex-1"
                 />
                 <Button type="submit" disabled={isProcessing}>
-                  {isProcessing ? (
-                    <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Processing...</>
-                  ) : (
-                    <><Play className="mr-2 h-4 w-4" />Generate</>
-                  )}
-                </Button>
+                {isProcessing ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Processing...
+                  </>
+                ) : (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4" />
+                    Generate
+                  </>
+                )}
+              </Button>
               </form>
             </CardContent>
           </Card>
@@ -190,9 +205,7 @@ const Summaries = () => {
         {error && (
           <div className="max-w-3xl mx-auto my-8 animate-fade-in">
             <Alert variant="destructive">
-              <AlertCircle className="h-4 w-4" />
-              <AlertTitle>Error</AlertTitle>
-              <AlertDescription>{error}</AlertDescription>
+              {error}
             </Alert>
           </div>
         )}
@@ -238,6 +251,26 @@ const Summaries = () => {
                 </div>
               </CardContent>
             </Card>
+          </div>
+        )}
+
+        {/* Add a back button when in quiz/flashcards mode */}
+        {(window.location.pathname.includes('quiz') || window.location.pathname.includes('flashcards')) && (
+          <div className="fixed bottom-4 right-4 z-50">
+            <Button
+              variant="outline"
+              onClick={() => {
+                const lastSummaryId = localStorage.getItem('lastSummaryId');
+                if (lastSummaryId) {
+                  navigate(`/summaries/${lastSummaryId}`);
+                } else {
+                  navigate('/summaries');
+                }
+              }}
+            >
+              <ChevronLeft className="w-4 h-4 mr-2" />
+              Back to Summary
+            </Button>
           </div>
         )}
       </div>
