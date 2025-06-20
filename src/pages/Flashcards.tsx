@@ -17,15 +17,45 @@ const Flashcards = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const [isProcessing, setIsProcessing] = useState(false);
-  const [currentCard, setCurrentCard] = useState<number>(0);
-  const [isFlipped, setIsFlipped] = useState(false);
   const [summary, setSummary] = useState<Summary | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [selectedSummaryId, setSelectedSummaryId] = useState<string | null>(id || null);
+  const [currentCard, setCurrentCard] = useState(0);
+  const [isFlipped, setIsFlipped] = useState(false);
 
   const { data: flashcards, isLoading: isFetchingFlashcards, error: flashcardsError } = useFlashcardsBySummary(id || "");
-  const { mutate: generateFlashcards } = useGenerateFlashcards();
-  const { mutate: deleteFlashcards } = useDeleteFlashcards();
+  const generateMutation = useGenerateFlashcards();
+  const deleteMutation = useDeleteFlashcards();
+
+  const generateFlashcards = (variables: { summaryId: string }) => {
+    generateMutation.mutate(variables, {
+      onSuccess: () => {
+        toast.success('Flashcards generated successfully!');
+      },
+      onError: (error) => {
+        toast.error('Failed to generate flashcards');
+      }
+    });
+  };
+
+  const handleDeleteAllFlashcards = () => {
+    if (!selectedSummaryId) return;
+
+    deleteMutation.mutate({ summaryId: selectedSummaryId }, {
+      onSuccess: () => {
+        toast.success('Flashcards deleted successfully!');
+        setSelectedSummaryId(null);
+        setCurrentCard(0);
+        setIsFlipped(false);
+      },
+      onError: (error) => {
+        toast.error('Failed to delete flashcards');
+      }
+    });
+  };
+
+  const isGeneratingFlashcards = generateMutation.isPending;
+  const isDeletingFlashcards = deleteMutation.isPending;
 
   useEffect(() => {
     if (!id) return;
@@ -52,21 +82,7 @@ const Flashcards = () => {
     fetchSummary();
   }, [id]);
 
-  const handleDeleteAllFlashcards = () => {
-    if (!selectedSummaryId) return;
 
-    deleteFlashcards(selectedSummaryId, {
-      onSuccess: () => {
-        toast.success('Flashcards deleted successfully!');
-        setSelectedSummaryId(null);
-        setCurrentCard(0);
-        setIsFlipped(false);
-      },
-      onError: (error) => {
-        toast.error('Failed to delete flashcards');
-      }
-    });
-  };
 
   const nextCard = () => {
     if (!flashcards || flashcards.length === 0) return;
@@ -89,7 +105,7 @@ const Flashcards = () => {
   if (!summary) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
-        <Header title="Generate Flashcards" />
+        <Header title="Flashcards" />
         <div className="container mx-auto px-4 py-12">
           {error && (
             <Alert variant="destructive">
@@ -161,8 +177,9 @@ const Flashcards = () => {
                       onClick={handleDeleteAllFlashcards}
                       variant="destructive"
                       className="w-full sm:w-auto"
+                      disabled={isDeletingFlashcards}
                     >
-                      Delete All Flashcards
+                      {isDeletingFlashcards ? 'Deleting...' : 'Delete All Flashcards'}
                     </Button>
                     <div className="flex gap-2">
                       <Button
@@ -189,60 +206,87 @@ const Flashcards = () => {
           </Card>
         </div>
 
-        {flashcards && flashcards.length > 0 ? (
-          <div className="relative w-full max-w-md mx-auto my-8">
-            <Card className={`transition-transform duration-500 ${isFlipped ? 'rotate-y-180' : ''}`}>
-              <CardContent className="p-6">
-                <div className="absolute top-2 right-2">
-                  <Badge variant="secondary">
-                    {currentCard + 1}/{flashcards.length}
-                  </Badge>
-                </div>
-                <div className={`transition-opacity duration-500 ${isFlipped ? 'opacity-0' : 'opacity-100'}`}>
-                  <h3 className="text-2xl font-semibold mb-2">
-                    {flashcards[currentCard].question}
-                  </h3>
-                  <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setIsFlipped(true)}
-                    >
-                      <RotateCcw className="w-4 h-4 mr-2" />
-                      Show Answer
+        <div className="flex flex-col items-center justify-center h-full">
+          {flashcards && flashcards.length > 0 ? (
+            <div className="flex flex-col items-center space-y-4">
+              <div className="relative w-96 h-64 bg-white rounded-lg shadow-lg p-4 transform transition-transform duration-300" 
+                   onClick={() => setIsFlipped(!isFlipped)}
+                   style={{ transform: isFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)' }}>
+                <div className="absolute inset-0 bg-white rounded-lg shadow-lg p-4 transform transition-transform duration-300"
+                     style={{ backfaceVisibility: 'hidden' }}>
+                  <div className="flex flex-col h-full justify-between">
+                    <div>
+                      <h3 className="text-xl font-semibold mb-2">{flashcards[currentCard].question}</h3>
+                      <div className="flex flex-wrap gap-2">
+                        <Badge variant="secondary" className="text-xs">
+                          {flashcards[currentCard].category}
+                        </Badge>
+                      </div>
+                    </div>
+                    <Button variant="outline" onClick={() => setIsFlipped(!isFlipped)}>
+                      {isFlipped ? 'Show Question' : 'Show Answer'}
                     </Button>
                   </div>
                 </div>
-                <div className={`transition-opacity duration-500 ${isFlipped ? 'opacity-100' : 'opacity-0'}`}>
-                  <p className="text-lg mb-4">
-                    {flashcards[currentCard].answer}
-                  </p>
-                  <Badge variant="outline">
-                    {flashcards[currentCard].category}
-                  </Badge>
+                <div className="absolute inset-0 bg-white rounded-lg shadow-lg p-4 transform transition-transform duration-300 rotateY(180deg)"
+                     style={{ backfaceVisibility: 'hidden' }}>
+                  <div className="flex flex-col h-full justify-between">
+                    <div>
+                      <p className="text-gray-600">{flashcards[currentCard].answer}</p>
+                    </div>
+                    <Button variant="outline" onClick={() => setIsFlipped(!isFlipped)}>
+                      Show Question
+                    </Button>
+                  </div>
                 </div>
-              </CardContent>
-            </Card>
-          </div>
-        ) : (
-          <div className="max-w-3xl mx-auto text-center py-8">
-            <div className="flex flex-col items-center gap-4">
-              <BookOpen className="w-12 h-12 text-muted-foreground" />
-              <h3 className="text-xl font-semibold">
-                No Flashcards Yet
-              </h3>
-              <p className="text-muted-foreground">
-                Generate flashcards for this summary to start learning!
-              </p>
-              <Button 
-                onClick={() => generateFlashcards(summary._id)}
+              </div>
+              <div className="flex flex-col sm:flex-row gap-4 w-full">
+                <div className="flex flex-col sm:flex-row gap-2 w-full">
+                  <Button
+                    variant="outline"
+                    onClick={prevCard}
+                    disabled={currentCard === 0 || !flashcards}
+                    className="w-full sm:w-auto"
+                  >
+                    <ChevronLeft className="w-4 h-4 mr-2" />
+                    Previous
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={nextCard}
+                    disabled={!flashcards || currentCard === flashcards.length - 1}
+                    className="w-full sm:w-auto"
+                  >
+                    <ChevronRight className="w-4 h-4 mr-2" />
+                    Next
+                  </Button>
+                </div>
+                <Button
+                  variant="destructive"
+                  onClick={handleDeleteAllFlashcards}
+                  className="w-full sm:w-auto"
+                  disabled={isDeletingFlashcards}
+                >
+                  {isDeletingFlashcards ? 'Deleting...' : 'Delete All Flashcards'}
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div className="text-center">
+              <h2 className="text-2xl font-bold mb-4">No Flashcards Found</h2>
+              <p className="text-gray-500 mb-6">You haven't generated any flashcards yet.</p>
+              <Button onClick={() => {
+                if (id) {
+                  generateFlashcards({ summaryId: id });
+                }
+              }}
+              disabled={isGeneratingFlashcards}
               >
-                Generate Flashcards
+                {isGeneratingFlashcards ? 'Generating...' : 'Generate New Flashcards'}
               </Button>
             </div>
-            <p>No flashcards available.</p>
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </div>
   );

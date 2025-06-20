@@ -29,7 +29,19 @@ const Summaries = () => {
   const navigate = useNavigate();
   const [youtubeUrl, setYoutubeUrl] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
+  const [lastSummaryId, setLastSummaryId] = useState<string | null>(() => {
+    const storedId = localStorage.getItem('lastSummaryId');
+    return storedId || null;
+  });
+
   const [summary, setSummary] = useState<Summary | null>(null);
+
+  useEffect(() => {
+    if (summary && summary._id) {
+      setLastSummaryId(summary._id);
+      localStorage.setItem('lastSummaryId', summary._id);
+    }
+  }, [summary]);
   const [error, setError] = useState<string | null>(null);
   const [isExporting, setIsExporting] = useState(false);
   const [isGeneratingQuiz, setIsGeneratingQuiz] = useState(false);

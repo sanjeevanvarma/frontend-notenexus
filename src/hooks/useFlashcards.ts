@@ -4,7 +4,7 @@ import { Flashcard, FlashcardSet } from '@/types/flashcards';
 
 export const useGenerateFlashcards = () => {
   return useMutation({
-    mutationFn: async (summaryId: string) => {
+    mutationFn: async ({ summaryId }: { summaryId: string }) => {
       const { data } = await axios.post<FlashcardSet>(
         '/api/flashcards/generate',
         { summaryId }
@@ -13,7 +13,7 @@ export const useGenerateFlashcards = () => {
     },
     onError: (error) => {
       console.error('Error generating flashcards:', error);
-      throw error; // Re-throw error to be caught by error boundary
+      throw error;
     }
   });
 };
@@ -48,7 +48,7 @@ export const useDeleteFlashcards = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (summaryId: string) => {
+    mutationFn: async ({ summaryId }: { summaryId: string }) => {
       const { data } = await axios.delete(
         `/api/flashcards/summary/${summaryId}`
       );
@@ -59,7 +59,7 @@ export const useDeleteFlashcards = () => {
     },
     onError: (error) => {
       console.error('Error deleting flashcards:', error);
-      throw error; // Re-throw error to be caught by error boundary
+      throw error;
     }
   });
 };
